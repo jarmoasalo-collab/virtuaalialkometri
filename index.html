@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Arvioi alkoholin palamista ja ajokuntoa tieteelliseen Watsonin kaavaan perustuen. Ei kerää henkilötietoja.">
+    <title>Virtuaalialkometri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
+        .hide-scroll::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 p-4 md:p-8 min-h-screen">
+
+    <div class="max-w-3xl mx-auto space-y-6">
+        
+        <!-- Otsikko -->
+        <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 text-center">
+            <svg class="w-10 h-10 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <h1 class="text-2xl font-bold text-slate-900">Virtuaalialkometri</h1>
+            <p class="text-slate-500 text-sm mt-1">Dynaaminen arvio alkoholin palamisesta ja ajokunnosta.</p>
+        </header>
+
+        <!-- Tulokset -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Arvio Nyt -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                <span class="text-slate-500 text-sm mb-1 font-medium">Arvio nyt</span>
+                <span id="res-permille" class="text-3xl font-bold text-emerald-500">0.00 ‰</span>
+            </div>
+            
+            <!-- Alle 0.5 -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                <span class="text-slate-500 text-sm mb-1 font-medium flex items-center gap-1 justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                    Alle 0.5‰ (Laki)
+                </span>
+                <span id="res-drive-time" class="text-2xl font-bold text-slate-800">--:--</span>
+                <span id="res-drive-date" class="text-xs text-slate-400"></span>
+            </div>
+
+            <!-- Täysin selvä -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center justify-center text-center">
+                <span class="text-slate-500 text-sm mb-1 font-medium flex items-center gap-1 justify-center">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Täysin selvä (0.0‰)
+                </span>
+                <span id="res-zero-time" class="text-2xl font-bold text-slate-800">--:--</span>
+                <span id="res-zero-date" class="text-xs text-slate-400"></span>
+            </div>
+        </div>
+
+        <!-- Henkilötiedot -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-semibold flex items-center gap-2 mb-4 text-slate-800">
+                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                Henkilötiedot
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Sukupuoli</label>
+                    <select id="inp-gender" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="male">Mies</option>
+                        <option value="female">Nainen</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Ikä</label>
+                    <input id="inp-age" type="number" min="18" max="100" value="30" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Pituus (cm)</label>
+                    <input id="inp-height" type="number" min="100" max="250" value="175" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Paino (kg)</label>
+                    <input id="inp-weight" type="number" min="40" max="200" value="75" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Juomien lisäys -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 class="text-lg font-semibold flex items-center gap-2 mb-4 text-slate-800">
+                <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z"></path></svg>
+                Lisää juotuja annoksia
+            </h2>
+            <div class="space-y-4 mb-4">
+                <div class="flex flex-wrap md:flex-nowrap gap-3">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Päivä</label>
+                        <select id="inp-day" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="today">Tänään</option>
+                            <option value="yesterday">Eilen</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Klo</label>
+                        <select id="inp-time" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Määrä</label>
+                        <select id="inp-count" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
+                </div>
+                <div class="flex flex-col md:flex-row gap-3 items-end">
+                    <div class="w-full md:flex-grow">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Juoma ja koko</label>
+                        <select id="inp-drink" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"></select>
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <button id="btn-add" class="w-full md:w-32 bg-blue-600 hover:bg-blue-700 text-white font-medium p-2.5 rounded-lg transition-colors">Lisää</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of Drinks -->
+            <div id="drinks-container" class="mt-6 pt-4 border-t border-slate-100 hidden">
+                <div class="flex justify-between items-end mb-3">
+                    <h3 class="text-sm font-semibold text-slate-500 uppercase">Kirjatut juomat</h3>
+                    <span id="drinks-summary" class="text-xs text-slate-500">Yht: 0g</span>
+                </div>
+                <div id="drinks-list" class="space-y-2 max-h-60 overflow-y-auto pr-1 hide-scroll"></div>
+            </div>
+        </div>
+
+        <!-- Vastuuvapaus -->
+        <div class="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm text-amber-800 flex gap-3 items-start">
+            <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            <div>
+                <p class="font-semibold mb-1">Vastuuvapaus ja arviointiriskit</p>
+                <p><strong>Vaikka tulos näyttäisi "Ei ylitä rajaa" tai alle 0,5‰, älä aja välittömästi juomisen jälkeen.</strong> Alkoholi imeytyy viiveellä ja vaikuttaa keskushermostoon välittömästi. Ainoa varma lukema liikenteessä on 0,0 ‰.</p>
+            </div>
+        </div>
+    </div>
+
+<script>
+// --- VAKIOT JA JUOMAT ---
+const LEGAL_LIMIT = 0.5;
+const BLOOD_WATER_FRACTION = 0.8;
+
+const DRINK_TYPES = [
+  { id: 'beer_mid_33', label: 'Keskiolut (4,7%) 0,33 l', grams: 12.2 },
+  { id: 'beer_mid_50', label: 'Keskiolut (4,7%) 0,5 l (Tuoppi)', grams: 18.6 },
+  { id: 'beer_strong_33', label: 'A-olut/Vahva olut (5,3%) 0,33 l', grams: 13.8 },
+  { id: 'beer_strong_50', label: 'A-olut/Vahva olut (5,3%) 0,5 l (Tuoppi)', grams: 20.9 },
+  { id: 'cider_longdrink_33', label: 'Siideri/Lonkero (5,5%) 0,33 l', grams: 14.3 },
+  { id: 'cider_longdrink_50', label: 'Siideri/Lonkero (5,5%) 0,5 l', grams: 21.7 },
+  { id: 'wine_12', label: 'Viini (12%) 12 cl (Lasi)', grams: 11.4 },
+  { id: 'wine_16', label: 'Viini (12%) 16 cl (Iso lasi)', grams: 15.2 },
+  { id: 'wine_24', label: 'Viini (12%) 24 cl (Erittäin iso lasi)', grams: 22.8 },
+  { id: 'wine_bottle', label: 'Viini (12%) 75 cl (Pullo)', grams: 71.1 },
+  { id: 'sparkling_12', label: 'Kuohuviini (11%) 12 cl', grams: 10.4 },
+  { id: 'shot_4', label: 'Väkevä viina (40%) 4 cl (Paukku)', grams: 12.6 },
+  { id: 'custom_1', label: 'Vakioannos (THL: 12g)', grams: 12.0 }
+];
+
+// --- TILA ---
+let drinks = [];
+
+// --- ALUSTUS ---
+function init() {
+    const timeSelect = document.getElementById('inp-time');
+    for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 15) {
+            let hs = h.toString().padStart(2, '0');
+            let ms = m.toString().padStart(2, '0');
+            let opt = document.createElement('option');
+            opt.value = `${hs}:${ms}`; opt.text = `${hs}:${ms}`;
+            timeSelect.appendChild(opt);
+        }
+    }
+    
+    const d = new Date();
+    const currH = d.getHours().toString().padStart(2, '0');
+    const currM = (Math.floor(d.getMinutes() / 15) * 15).toString().padStart(2, '0');
+    timeSelect.value = `${currH}:${currM}`;
+
+    const countSelect = document.getElementById('inp-count');
+    for(let i=1; i<=10; i++) {
+        let opt = document.createElement('option');
+        opt.value = i; opt.text = `${i} kpl`;
+        countSelect.appendChild(opt);
+    }
+
+    const drinkSelect = document.getElementById('inp-drink');
+    DRINK_TYPES.forEach(dt => {
+        let opt = document.createElement('option');
+        opt.value = dt.id; opt.text = `${dt.label} (${dt.grams}g)`;
+        drinkSelect.appendChild(opt);
+    });
+
+    document.getElementById('btn-add').addEventListener('click', addDrink);
+    ['inp-gender', 'inp-age', 'inp-height', 'inp-weight'].forEach(id => {
+        document.getElementById(id).addEventListener('input', calculate);
+    });
+
+    setInterval(calculate, 60000);
+    calculate();
+}
+
+// --- APUFUNKTIOT ---
+function getTimestamp(day, timeStr) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const date = new Date();
+    if (day === 'yesterday') date.setDate(date.getDate() - 1);
+    date.setHours(hours, minutes, 0, 0);
+    return date.getTime();
+}
+
+function calculateTBW(gender, age, height, weight) {
+    if (gender === 'male') {
+        return 2.447 - (0.09156 * age) + (0.1074 * height) + (0.3362 * weight);
+    } else {
+        return -2.097 + (0.1069 * height) + (0.2466 * weight);
+    }
+}
+
+function formatTime(dateObj) {
+    if (!dateObj) return '--:--';
+    return dateObj.toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' });
+}
+
+function formatDateLabel(dateObj) {
+    if (!dateObj) return '';
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (dateObj.getDate() === today.getDate() && dateObj.getMonth() === today.getMonth()) return 'Tänään';
+    if (dateObj.getDate() === tomorrow.getDate() && dateObj.getMonth() === tomorrow.getMonth()) return 'Huomenna';
+    return dateObj.toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' });
+}
+
+// --- TOIMINNOT ---
+function addDrink() {
+    const day = document.getElementById('inp-day').value;
+    const time = document.getElementById('inp-time').value;
+    const typeId = document.getElementById('inp-drink').value;
+    const count = Number(document.getElementById('inp-count').value);
+    
+    const drinkType = DRINK_TYPES.find(d => d.id === typeId);
+    
+    const newDrink = {
+        id: Math.random().toString(36).substr(2, 9),
+        timestamp: getTimestamp(day, time),
+        label: drinkType.label,
+        count: count,
+        totalGrams: drinkType.grams * count,
+        timeLabel: `${day === 'yesterday' ? 'Eilen' : 'Tänään'} klo ${time}`
+    };
+
+    drinks.push(newDrink);
+    renderDrinksList();
+    calculate();
+}
+
+function removeDrink(id) {
+    drinks = drinks.filter(d => d.id !== id);
+    renderDrinksList();
+    calculate();
+}
+
+function renderDrinksList() {
+    const container = document.getElementById('drinks-container');
+    const list = document.getElementById('drinks-list');
+    const summary = document.getElementById('drinks-summary');
+    
+    list.innerHTML = '';
+    if (drinks.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    
+    let totalGrams = 0;
+    const sortedDrinks = [...drinks].sort((a, b) => a.timestamp - b.timestamp);
+
+    sortedDrinks.forEach(d => {
+        totalGrams += d.totalGrams;
+        const el = document.createElement('div');
+        el.className = "flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100 gap-2";
+        el.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-100 p-1.5 rounded-md">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                </div>
+                <div>
+                    <div class="font-medium text-slate-700 text-sm">${d.label}</div>
+                    <div class="text-xs text-slate-500">${d.timeLabel}</div>
+                </div>
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+                <div class="text-right">
+                    <span class="bg-purple-100 text-purple-700 text-xs font-bold px-2 py-1 rounded-full">${d.count} kpl</span>
+                    <div class="text-xs text-slate-500 mt-1">${d.totalGrams.toFixed(1)} g</div>
+                </div>
+                <button onclick="removeDrink('${d.id}')" class="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+            </div>
+        `;
+        list.appendChild(el);
+    });
+
+    const standard = (totalGrams / 12).toFixed(1);
+    summary.innerText = `Yht: ${totalGrams.toFixed(1)}g (n. ${standard} vakioannosta)`;
+}
+
+// --- LASKENTA ---
+function calculate() {
+    const gender = document.getElementById('inp-gender').value;
+    const age = Number(document.getElementById('inp-age').value) || 30;
+    const height = Number(document.getElementById('inp-height').value) || 175;
+    const weight = Number(document.getElementById('inp-weight').value) || 75;
+    const now = Date.now();
+
+    const elPermille = document.getElementById('res-permille');
+    const elDriveTime = document.getElementById('res-drive-time');
+    const elDriveDate = document.getElementById('res-drive-date');
+    const elZeroTime = document.getElementById('res-zero-time');
+    const elZeroDate = document.getElementById('res-zero-date');
+
+    if (drinks.length === 0 || weight <= 0 || height <= 0 || age <= 0) {
+        elPermille.innerText = "0.00 ‰"; elPermille.className = "text-3xl font-bold text-emerald-500";
+        elDriveTime.innerText = "--:--"; elDriveDate.innerText = "";
+        elZeroTime.innerText = "--:--"; elZeroDate.innerText = "";
+        return;
+    }
+
+    const sortedDrinks = [...drinks].sort((a, b) => a.timestamp - b.timestamp);
+    const tbwLiters = calculateTBW(gender, age, height, weight);
+    const burnRateGramsPerMin = (weight / 10) / 60;
+    
+    let currentGrams = 0;
+    let simTime = sortedDrinks[0].timestamp;
+    let drinkIndex = 0;
+    
+    let driveTime = null;
+    let zeroTime = null;
+    let currentPermilleAtNow = 0;
+    let maxPermille = 0;
+    let exceededLimit = false;
+
+    const maxSimTime = simTime + (72 * 60 * 60 * 1000);
+
+    while (simTime < maxSimTime) {
+        while (drinkIndex < sortedDrinks.length && sortedDrinks[drinkIndex].timestamp <= simTime) {
+            currentGrams += sortedDrinks[drinkIndex].totalGrams;
+            drinkIndex++;
+        }
+
+        let permille = (currentGrams * BLOOD_WATER_FRACTION) / tbwLiters;
+        if (permille > maxPermille) maxPermille = permille;
+
+        if (simTime >= now && simTime < now + 60000) {
+            currentPermilleAtNow = permille;
+        }
+
+        if (permille >= LEGAL_LIMIT) {
+            exceededLimit = true;
+            driveTime = null; 
+        }
+
+        if (drinkIndex === sortedDrinks.length) {
+            if (exceededLimit && permille < LEGAL_LIMIT && driveTime === null) {
+                driveTime = simTime;
+            }
+            if (currentGrams <= 0 && zeroTime === null) {
+                zeroTime = simTime;
+                break; 
+            }
+        }
+
+        if (currentGrams > 0) {
+            currentGrams = Math.max(0, currentGrams - burnRateGramsPerMin);
+        }
+        simTime += 60000; 
+    }
+
+    if (now > zeroTime && zeroTime !== null) currentPermilleAtNow = 0;
+    currentPermilleAtNow = Math.max(0, currentPermilleAtNow);
+    
+    elPermille.innerText = currentPermilleAtNow.toFixed(2) + " ‰";
+    elPermille.className = `text-3xl font-bold ${currentPermilleAtNow > LEGAL_LIMIT ? 'text-red-500' : currentPermilleAtNow > 0 ? 'text-amber-500' : 'text-emerald-500'}`;
+
+    if (exceededLimit) {
+        elDriveTime.innerText = formatTime(driveTime ? new Date(driveTime) : null);
+        elDriveTime.className = "text-2xl font-bold text-slate-800";
+        elDriveDate.innerText = formatDateLabel(driveTime ? new Date(driveTime) : null);
+    } else {
+        elDriveTime.innerText = "Ei ylitä rajaa";
+        elDriveTime.className = "text-lg font-bold text-emerald-600 mt-1";
+        elDriveDate.innerText = "";
+    }
+
+    elZeroTime.innerText = formatTime(zeroTime ? new Date(zeroTime) : null);
+    elZeroDate.innerText = formatDateLabel(zeroTime ? new Date(zeroTime) : null);
+}
+
+window.onload = init;
+</script>
+</body>
+</html>
