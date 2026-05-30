@@ -1,0 +1,17 @@
+{
+  "name": "Virtuaalialkometri",
+  "short_name": "Alkometri",
+  "description": "Dynaaminen arvio alkoholin palamisesta ja ajokunnosta",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#1e40af",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
